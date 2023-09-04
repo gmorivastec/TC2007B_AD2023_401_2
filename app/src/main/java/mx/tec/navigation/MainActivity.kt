@@ -1,5 +1,7 @@
 package mx.tec.navigation
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,12 +13,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import coil.compose.AsyncImage
 import mx.tec.navigation.ui.theme.NavigationTheme
 
@@ -30,7 +35,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    NavigationExample()
+                    NavigationExample(this)
                 }
             }
         }
@@ -38,7 +43,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun NavigationExample() {
+fun NavigationExample(activity : Activity? = null) {
     // this will be the main manager for our views
     // first we need to declare a controller
     // the controller is the object in charge of changing the views
@@ -53,25 +58,74 @@ fun NavigationExample() {
         // within the navhost we are going to declare several composables to navigate
         // using the composable macro
         composable("mainMenu") {
-            MainMenu(
-                kittenInterfaceButtonLogic = {
-                    navController.navigate("kittenInterface")
-                },
-                puppyInterfaceButtonLogic = {
-                    navController.navigate("puppyInterface")
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ){
+                MainMenu(
+                    kittenInterfaceButtonLogic = {
+                        navController.navigate("kittenInterface/Michi/75")
+                    },
+                    puppyInterfaceButtonLogic = {
+                        navController.navigate("puppyInterface")
+                    }
+                )
+
+                // retrieve value from save state handle
+                // ?. - safe call
+                // if object is null line is not run
+                val result = navController.currentBackStackEntry
+                    ?.savedStateHandle
+                    ?.getLiveData<String>("puppyName")
+                    ?.observeAsState()
+
+                // let - scope function
+                // run code within a particular context
+                // let - in this case the definition of a variable / object
+                result?.value?.let {name ->
+                    Text("the puppy is called: $name")
+
+                    // once used you can clean up
+                    navController
+                        .currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.remove<String>("puppyName")
                 }
-            )
+
+                Button(
+                    onClick = {
+                        val intent = Intent(activity, ConstraintLayoutActivity::class.java)
+                        activity?.startActivity(intent)
+                    }
+                ) {
+                    Text("Constraint Layout Example")
+                }
+            }
         }
-        composable("kittenInterface") {
+        composable(
+            "kittenInterface/{name}/{weight}",
+            arguments = listOf(
+                navArgument("name") { type = NavType.StringType },
+                navArgument("weight") { type = NavType.FloatType }
+            )
+        ) {backStackEntry ->
+
+            // how to retrieve values from arguments
+
             KittenInterface(
                 goBack = {
                     navController.popBackStack()
-                }
+                },
+                name = backStackEntry.arguments?.getString("name"),
+                weight = backStackEntry.arguments?.getFloat("weight")
             )
         }
         composable("puppyInterface") {
             PuppyInterface(
                 goBack = {
+                    navController
+                        .previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("puppyName", "Firulais")
                     navController.popBackStack()
                 }
             )
@@ -103,7 +157,9 @@ fun MainMenu(
 
 @Composable
 fun KittenInterface(
-    goBack : () -> Unit
+    goBack : () -> Unit,
+    name : String? = "",
+    weight : Float? = 1.0f
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
@@ -117,6 +173,8 @@ fun KittenInterface(
         ) {
             Text("go back")
         }
+        Text("name: $name")
+        Text("weight: $weight")
     }
 }
 
