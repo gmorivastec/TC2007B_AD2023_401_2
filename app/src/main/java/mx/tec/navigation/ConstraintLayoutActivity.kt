@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +32,7 @@ class ConstraintLayoutActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ConstraintLayoutExample()
+                    DecoupledConstraintExample()
                 }
             }
         }
@@ -83,6 +84,75 @@ fun ConstraintLayoutExample() {
         )
     }
 }
+
+// decoupled constraints
+// in constraint layouts you can define the constraints by themselves
+// and then use them on a specific layout
+
+private fun myConstraints(leftMargin : Dp, topMargin : Dp) : ConstraintSet {
+
+    return ConstraintSet {
+
+        val button1 = createRefFor("button1")
+        val button2 = createRefFor("button2")
+        val button3 = createRefFor("button3")
+
+        constrain(button1) {
+            top.linkTo(parent.top, margin = topMargin)
+            start.linkTo(parent.start, margin = leftMargin)
+        }
+
+        constrain(button2) {
+            top.linkTo(button1.bottom, margin = topMargin)
+            start.linkTo(button1.end, margin = leftMargin)
+        }
+
+        constrain(button3) {
+            top.linkTo(button2.bottom, margin = topMargin)
+            end.linkTo(button2.start, margin = leftMargin)
+        }
+    }
+}
+
+// in order to be able to actually use a constrain set we need
+// a composable that uses it!
+@Composable
+fun DecoupledConstraintExample() {
+
+    // layout that fits availabe space on parent
+    BoxWithConstraints {
+
+        // in order to use a constraint set we need to declare one
+        //val constraints = myConstraints(20.dp, 20.dp)
+        //val constraints = myConstraints(0.dp, 0.dp)
+        val constraints = myConstraints(50.dp, 50.dp)
+
+        ConstraintLayout(constraints) {
+
+            Button(
+                onClick = { /*TODO*/ },
+                modifier = Modifier.layoutId("button1")
+            ) {
+                Text("Button 1")
+            }
+
+            Button(
+                onClick = { /*TODO*/ },
+                modifier = Modifier.layoutId("button2")
+            ) {
+                Text("Button 2")
+            }
+
+            Button(
+                onClick = { /*TODO*/ },
+                modifier = Modifier.layoutId("button3")
+            ) {
+                Text("Button 3")
+            }
+        }
+    }
+}
+
 
 @Preview(showBackground = true)
 @Composable
